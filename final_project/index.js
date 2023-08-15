@@ -11,17 +11,23 @@ app.use(express.json());
 app.use("/customer",session({secret:"admin",resave: true, saveUninitialized: true}))
 
 app.use("/customer/auth/*", function auth(req,res,next){
-    if(req.session.authorization) {
-        const token = req.session.authorization.accessToken;
-        try {
-            const decoded = jwt.verify(token, "admin");
-            req.user = decoded;
-            next();
-        } catch (error) {
-            return res.status(403).json({message: "User not authenticated"});
+    const username=req.body.username;
+    const password=req.body.password;
+    if(!username||!password){
+        return res.status(400).json({message: "Invalid username and password!"});
+    }
+
+    if(authenticated.authenticatedUser(username,password)){
+        let accessToken=jwt.sign({
+            username:username
+        }, 'access',{expiresIn:60*60});
+        req.session.authorization={
+            accessToken,username
         }
-    } else {
-        return res.status(403).json({message: "User not logged in"});
+        return next();
+    }
+    else{     
+        return res.status(400).json({message: "Invalid username and password!"});
     }
  });
  
